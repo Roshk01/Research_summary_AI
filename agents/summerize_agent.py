@@ -11,4 +11,4 @@ def summarize_text(text, max_chunk_len = 1000):
         chunk_summary = summerizer(chunk,max_chunk_len,min_length= 50, do_sample=False)[0]['summary_text']
         summaries.append(chunk_summary)
 
-        return " ".join(summaries)
+    return " ".join(summaries)
