@@ -14,6 +14,7 @@ RUN apt-get update && \
 
 # Install Python packages
 RUN pip install --no-cache-dir --upgrade pip
+RUN pip install gtts
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose port Streamlit runs on

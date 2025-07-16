@@ -4,5 +4,5 @@ PyMuPDF
 scikit-learn
 transformers
 torch
-pyttsx3
+gTTS
 streamlit
