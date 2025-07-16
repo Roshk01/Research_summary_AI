@@ -9,7 +9,7 @@ This app fetches research papers from arXiv, summarizes them using transformers,
 - Search research papers from arXiv
 - Classify summaries into topics
 - Summarize papers using a transformer model
-- Generate audio from summaries using TTS
+- Generate audio from summaries using gTTS
 - Dockerized for one-command deployment
 
 ---
