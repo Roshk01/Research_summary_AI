@@ -1,4 +1,5 @@
 requests
+Python
 beautifulsoup4
 PyMuPDF
 scikit-learn
