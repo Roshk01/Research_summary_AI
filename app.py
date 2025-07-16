@@ -3,59 +3,65 @@ from agents.search_agent import search_arxiv
 from agents.classification import classify_paper_to_topic
 from agents.synthesis_agent import synthesise_summary
 from agents.audio_agent import text_to_audio_light
+import os
 
-st.set_page_config(page_title="Research Summarizer & Podcast", layout="centered")
+st.set_page_config(page_title="Research Summarizer", layout="centered")
 st.title("📚 Research Summarizer & Audio Generator")
 
-# ---- Step 1: Search papers ----
-st.header("🔍 1. Search Research Papers")
-query = st.text_input("Enter a research topic:", value="AI summarization")
-num_papers = st.slider("Number of papers to fetch", 1, 10, 4)
+# --- Step 1: Search Papers ---
+st.header("🔍 1. Search Papers")
+query = st.text_input("Enter a topic:", "AI summarization")
+num_papers = st.slider("Number of papers", 1, 10, 3)
 
-if st.button("Fetch Papers"):
-    with st.spinner("🔎 Searching papers..."):
+if st.button("Search"):
+    with st.spinner("Searching papers..."):
         papers = search_arxiv(query, max_results=num_papers)
         st.session_state["papers"] = papers
     st.success(f"✅ Found {len(papers)} papers.")
 
-# ---- Step 2: Review papers ----
+# --- Step 2: Review Papers ---
 if "papers" in st.session_state:
-    st.header("📄 2. Review Fetched Papers")
+    st.header("📄 2. Review Papers")
     for i, paper in enumerate(st.session_state["papers"], 1):
         st.markdown(f"**{i}. {paper['title']}**")
-        st.markdown(f"🔗 [Link to Paper]({paper['link']})")
-        st.markdown(f"🕒 Published: {paper['Published']}")
-        st.markdown(f"📝 Summary:\n{paper['summary'][:300]}...")
+        st.write(f"🔗 {paper['link']}")
+        st.write(f"📅 {paper['Published']}")
+        st.write(f"📝 {paper['summary'][:300]}...")
 
-# ---- Step 3: Classify Summaries ----
+# --- Step 3: Classify & Synthesize ---
 if "papers" in st.session_state:
-    st.header("🧠 3. Classify Summaries by Topic")
-    topic_input = st.text_input("Enter comma-separated topics:", value="Natural Language Processing, Reinforcement Learning, Medical AI")
+    st.header("🧠 3. Classify and Synthesize")
+    topic_input = st.text_input("Enter topics (comma-separated):", "Natural Language Processing, Reinforcement Learning")
 
-    if st.button("Classify & Group"):
+    if st.button("Classify & Summarize"):
         topics = [t.strip() for t in topic_input.split(",")]
         grouped = {}
 
-        with st.spinner("🧠 Classifying summaries..."):
-            for paper in st.session_state["papers"]:
-                topic, score = classify_paper_to_topic(paper["summary"], topics)
-                grouped.setdefault(topic, []).append(paper["summary"])
+        for paper in st.session_state["papers"]:
+            topic, _ = classify_paper_to_topic(paper["summary"], topics)
+            grouped.setdefault(topic, []).append(paper)  # full paper dict
 
-        st.session_state["grouped_summaries"] = grouped
-        st.success("✅ Classification completed!")
+        with st.spinner("Summarizing..."):
+            result = synthesise_summary(grouped)
+            st.session_state["summary_result"] = result
 
-# ---- Step 4: Synthesize Text Summaries and Generate Audio ----
-if "grouped_summaries" in st.session_state:
-    st.header("📄 4. Synthesize Summaries & Generate Audio")
+# --- Step 4: Display Summary + Audio ---
+if "summary_result" in st.session_state:
+    st.header("🔊 4. Topic-wise Summaries & Audio")
 
-    with st.spinner("📝 Synthesizing summaries using transformer..."):
-        output = synthesise_summary(st.session_state["grouped_summaries"])
-
-    for topic, summary_text in output.items():
+    for topic, content in st.session_state["summary_result"].items():
         st.subheader(f"📌 {topic}")
-        st.write(summary_text)
+        st.write(content["summary"])
+        st.markdown("**📚 Sources:**")
+        for src in content["sources"]:
+            st.markdown(f"- [{src['title']}]({src['link']})")
 
-        if st.button(f"🔊 Generate Audio for {topic}", key=f"audio_{topic}"):
-            audio_path = text_to_audio_light(summary_text, filename=f"{topic}.mp3")
-            st.audio(audio_path)
-            st.success("🎧 Audio generated for topic: " + topic)
+        if st.button(f"🎧 Generate Audio for {topic}", key=f"audio_btn_{topic}"):
+            audio_path = text_to_audio_light(content["summary"], filename=f"{topic}.mp3")
+            st.session_state[f"audio_path_{topic}"] = audio_path
+            st.success("🎧 Audio ready!")
+
+        if f"audio_path_{topic}" in st.session_state:
+            st.audio(st.session_state[f"audio_path_{topic}"])
+
+            

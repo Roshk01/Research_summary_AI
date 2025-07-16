@@ -4,33 +4,44 @@ synthesizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
 def synthesise_summary(grouped_papers, max_chunk_len=1000):
     output = {}
-
+    print("DEBUG grouped_papers:", grouped_papers)
     for topic, paper_list in grouped_papers.items():
-        # Combine all summaries into one chunk
-        summaries = [paper["summary"] for paper in paper_list]
+        summaries = []
+        sources = []
+        for paper in paper_list:
+            # Fix: Only append to sources if paper is dict
+            if isinstance(paper, dict):
+                summaries.append(paper.get("summary", ""))
+                sources.append({
+                    "title": paper.get("title", "No Title"),
+                    "link": paper.get("link", "#")
+                })
+            else:
+                summaries.append(str(paper))  # fallback for stray strings
+
         combined_text = " ".join(summaries)
+        if not combined_text.strip():
+            output[topic] = {
+                "summary": "⚠️ No content to summarize.",
+                "sources": sources
+            }
+            continue
 
-        for i, s in enumerate(summaries):
-            if not isinstance(s, str):
-                raise TypeError(f"[{topic}] Summary at index {i} is not a string: {type(s)} → {s}")
-
-        # Chunk if too long
         chunks = [combined_text[i:i + max_chunk_len] for i in range(0, len(combined_text), max_chunk_len)]
         topic_synthesis = []
-
         for chunk in chunks:
-            summary = synthesizer(chunk, max_length=150, min_length=40, do_sample=False)[0]["summary_text"]
-            topic_synthesis.append(summary)
+            result = synthesizer(chunk, max_length=150, min_length=40, do_sample=False)
+            if isinstance(result, list) and "summary_text" in result[0]:
+                topic_synthesis.append(result[0]["summary_text"])
+            else:
+                topic_synthesis.append("⚠️ Summarization failed.")
 
-        # Attach synthesis + source mapping
         output[topic] = {
             "summary": " ".join(topic_synthesis),
-            "sources": [{"title": p["title"], "link": p["link"]} for p in paper_list]
+            "sources": sources
         }
 
     return output
-
-
 
 grouped_data = {
     "Natural Language Processing": [
