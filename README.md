@@ -11,6 +11,7 @@ This app fetches research papers from arXiv, summarizes them using transformers,
 - Summarize papers using a transformer model
 - Generate audio from summaries using gTTS
 - Dockerized for one-command deployment
+- Test_agents.ipynb includes all the examples for the agents and it's acceptable input format
 
 ---
 
