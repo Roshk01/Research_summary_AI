@@ -1,9 +1,8 @@
-import fitz
+import fitz  
 
-def extract_text_from_pdf(pdf_path):
+def extract_text_from_pdf(file_obj):
     text = ""
-    doc = fitz.open(pdf_path)
-    for page in doc:
-        text += page.get_text()
-    doc.close()
+    with fitz.open(stream=file_obj.read(), filetype="pdf") as doc:
+        for page in doc:
+            text += page.get_text()
     return text

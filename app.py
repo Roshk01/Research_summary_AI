@@ -3,13 +3,13 @@ from agents.search_agent import search_arxiv
 from agents.classification import classify_paper_to_topic
 from agents.synthesis_agent import synthesise_summary
 from agents.audio_agent import text_to_audio_light
-import os
+from agents.preprocess_agent import extract_text_from_pdf  
 
 st.set_page_config(page_title="Research Summarizer", layout="centered")
-st.title("📚 Research Summarizer & Audio Generator")
+st.title("Research Summarizer & Audio Generator")
 
 # --- Step 1: Search Papers ---
-st.header("🔍 1. Search Papers")
+st.header("1. Search Papers")
 query = st.text_input("Enter a topic:", "AI summarization")
 num_papers = st.slider("Number of papers", 1, 10, 3)
 
@@ -18,6 +18,22 @@ if st.button("Search"):
         papers = search_arxiv(query, max_results=num_papers)
         st.session_state["papers"] = papers
     st.success(f"✅ Found {len(papers)} papers.")
+
+# --- Step: Upload PDF Paper ---
+st.header("Or Upload Your Own Research Paper (PDF)")
+pdf_file = st.file_uploader("Upload a PDF file instead of using ArXiv", type=["pdf"])
+
+if pdf_file is not None:
+    with st.spinner("Extracting text from uploaded PDF..."):
+        text = extract_text_from_pdf(pdf_file)  
+        st.session_state["papers"] = [{
+            "title": pdf_file.name,
+            "link": "Uploaded file",
+            "Published": "N/A",
+            "summary": text
+        }]
+        st.success("PDF uploaded and text extracted.")
+        st.text_area("Extracted Text (Preview)", text[:2000], height=300)
 
 # --- Step 2: Review Papers ---
 if "papers" in st.session_state:
@@ -39,7 +55,7 @@ if "papers" in st.session_state:
 
         for paper in st.session_state["papers"]:
             topic, _ = classify_paper_to_topic(paper["summary"], topics)
-            grouped.setdefault(topic, []).append(paper)  # full paper dictS
+            grouped.setdefault(topic, []).append(paper)
 
         with st.spinner("Summarizing..."):
             result = synthesise_summary(grouped)
@@ -63,5 +79,3 @@ if "summary_result" in st.session_state:
 
         if f"audio_path_{topic}" in st.session_state:
             st.audio(st.session_state[f"audio_path_{topic}"])
-
-            
